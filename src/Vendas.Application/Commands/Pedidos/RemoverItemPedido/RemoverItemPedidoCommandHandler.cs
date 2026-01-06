@@ -1,17 +1,21 @@
 ﻿using MediatR;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 using Vendas.Application.Abstractions.Persistence;
 using Vendas.Domain.Pedidos.Interfaces;
 
-namespace Vendas.Application.Commands.Pedidos.AdicionarItemAoPedido
+namespace Vendas.Application.Commands.Pedidos.RemoverItemPedido
 {
-    public sealed class AdicionarItemAoPedidoCommandHandler : IRequestHandler<
-        AdicionarItemAoPedidoCommand,
-        AdicionarItemAoPedidoResultDTO>
+    public sealed class RemoverItemPedidoCommandHandler
+        : IRequestHandler<RemoverItemPedidoCommand>
     {
         private readonly IPedidoRepository _pedidoRepository;
         private readonly IUnitOfWork _unitOfWork;
 
-        public AdicionarItemAoPedidoCommandHandler(
+        public RemoverItemPedidoCommandHandler(
             IPedidoRepository pedidoRepository,
             IUnitOfWork unitOfWork)
         {
@@ -19,7 +23,9 @@ namespace Vendas.Application.Commands.Pedidos.AdicionarItemAoPedido
             _unitOfWork = unitOfWork;
         }
 
-        public async Task<AdicionarItemAoPedidoResultDTO> Handle(AdicionarItemAoPedidoCommand request, CancellationToken cancellationToken)
+        public async Task Handle(
+            RemoverItemPedidoCommand request,
+            CancellationToken cancellationToken)
         {
             var pedido = await _pedidoRepository
                 .ObterPorIdAsync(request.PedidoId, cancellationToken);
@@ -28,20 +34,11 @@ namespace Vendas.Application.Commands.Pedidos.AdicionarItemAoPedido
                 throw new InvalidOperationException("Pedido não encontrado.");
 
             // REGRA DE NEGÓCIO → DOMAIN
-            pedido.AdicionarItem(
-                request.ItemId,
-                request.NomeProduto,
-                request.PrecoUnitario,
-                request.Quantidade);
+            pedido.RemoverItem(request.ItemId);
 
             // FECHAMENTO TRANSACIONAL
             await _unitOfWork.CommitAsync(cancellationToken);
-
-            return new AdicionarItemAoPedidoResultDTO(
-                pedido.Id,
-                pedido.ValorTotal,
-                pedido.StatusPedido.ToString()
-            );
         }
     }
+
 }

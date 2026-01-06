@@ -9,15 +9,15 @@ using Vendas.Domain.Pedidos.Entities;
 using Vendas.Domain.Pedidos.Interfaces;
 using Vendas.Domain.Pedidos.ValueObjects;
 
-namespace Vendas.Application.Commands.Pedidos.CriarPedido
+namespace Vendas.Application.Commands.Pedidos.AtualizaEnderecoEntrega
 {
-    public sealed class CriarPedidoCommandHandler : IRequestHandler<
-        CriarPedidoCommand>
+    public sealed class AtualizaEnderecoEntregaCommandHandler : IRequestHandler<
+        AtualizarEnderecoEntregaCommand>
     {
         private readonly IPedidoRepository _pedidoRepository;
         private readonly IUnitOfWork _unitOfWork;
 
-        public CriarPedidoCommandHandler(
+        public AtualizaEnderecoEntregaCommandHandler(
             IPedidoRepository pedidoRepository,
             IUnitOfWork unitOfWork)
         {
@@ -25,8 +25,13 @@ namespace Vendas.Application.Commands.Pedidos.CriarPedido
             _unitOfWork = unitOfWork;
         }
 
-        public async Task Handle(CriarPedidoCommand request, CancellationToken cancellationToken)
+        public async Task Handle(AtualizarEnderecoEntregaCommand request, CancellationToken cancellationToken)
         {
+            var pedido = await _pedidoRepository.ObterPorIdAsync(request.PedidoId, cancellationToken);
+
+            if (pedido is null)
+                throw new InvalidOperationException("Pedido não encontrado.");
+
             var endereco = EnderecoEntrega.Criar(
                 request.Cep,
                 request.Logradouro,
@@ -37,14 +42,9 @@ namespace Vendas.Application.Commands.Pedidos.CriarPedido
                 request.Pais
             );
 
-            var pedido = Pedido.Criar(
-                request.ClienteId,
-                endereco);
-
-            await _pedidoRepository.AdicionarAsync(pedido, cancellationToken);
+            pedido.AtualizarEnderecoEntrega(endereco);
 
             await _unitOfWork.CommitAsync(cancellationToken);
         }
     }
-
 }
